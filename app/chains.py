@@ -37,20 +37,17 @@ class Chain:
     def write_mail(self,job,links):
         prompt_email = PromptTemplate.from_template(
             """
-        ### JOB DESCRIPTION:
-        {job_description}
-        
-        ### INSTRUCTION:
-        You are Kalash, Founder and developer of CloudDrop. CloudDrop is an AI & Software Consulting company dedicated to facilitating
-        the seamless integration of business processes through automated tools. 
-        Over our experience, we have empowered numerous enterprises with tailored solutions, fostering scalability, 
-        process optimization, cost reduction, and heightened overall efficiency. 
-        Your job is to write a cold email to the client regarding the job mentioned above describing the capability of CloudDrop 
-        in fulfilling their needs.
-        Also add the most relevant ones from the following links to showcase Atliq's portfolio: {link_list}
-        Remember you are Kalash, founder and developer of CloudDrop. 
-        Do not provide a preamble.
-        ### EMAIL (NO PREAMBLE):
+        JOB DESCRIPTION:
+{job_description}
+
+INSTRUCTION:
+You are Kalash, a passionate student developer specializing in AI & Software solutions, eager to contribute your skills and enthusiasm to company. With hands-on experience from personal and academic projects, you have helped organizations and teams achieve process automation, improved efficiency, and cost reduction through innovative solutions.
+Your task is to craft a cold email to the client (potential employer) for the job described above, highlighting your relevant skills, eagerness to learn, and concrete examples of your work.
+Also, select the most relevant items from your portfolio or previous project links here: {link_list}, and add them as proof of your capabilities.
+Remember you are Kalash, an enthusiastic student developer.
+Do not provide a preamble.
+
+EMAIL (NO PREAMBLE):
         
         """
         )
