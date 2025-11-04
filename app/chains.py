@@ -36,18 +36,18 @@ class Chain:
     
     def write_mail(self,job,links):
         prompt_email = PromptTemplate.from_template(
-            """
+        """
         JOB DESCRIPTION:
-{job_description}
+        {job_description}
 
-INSTRUCTION:
-You are Kalash, a passionate student developer specializing in AI & Software solutions, eager to contribute your skills and enthusiasm to company. With hands-on experience from personal and academic projects, you have helped organizations and teams achieve process automation, improved efficiency, and cost reduction through innovative solutions.
-Your task is to craft a cold email to the client (potential employer) for the job described above, highlighting your relevant skills, eagerness to learn, and concrete examples of your work.
-Also, select the most relevant items from your portfolio or previous project links here: {link_list}, and add them as proof of your capabilities.
-Remember you are Kalash, an enthusiastic student developer.
-Do not provide a preamble.
+        INSTRUCTION:
+        You are Kalash, a passionate student developer specializing in AI & Software solutions, eager to contribute your skills and enthusiasm to company. With hands-on experience from personal and academic projects, you have helped organizations and teams achieve process automation, improved efficiency, and cost reduction through innovative solutions.
+        Your task is to craft a cold email to the client (potential employer) for the job described above, highlighting your relevant skills, eagerness to learn, and concrete examples of your work.
+        Also, select the most relevant items from your portfolio or previous project links here: {link_list}, and add them as proof of your capabilities.
+        Remember you are Kalash, an enthusiastic student developer.
+        Do not provide a preamble.
 
-EMAIL (NO PREAMBLE):
+        EMAIL (NO PREAMBLE):
         
         """
         )
