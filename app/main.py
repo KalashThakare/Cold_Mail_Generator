@@ -8,7 +8,6 @@ from typing import List, Dict
 
 def load_web_content(url: str) -> str:
     """Fetch and clean webpage text from a given URL.."""
-    "just checking "
     loader = WebBaseLoader([url])
     return clean_text(loader.load().pop().page_content)
 
