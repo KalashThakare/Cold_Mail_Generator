@@ -3,7 +3,7 @@ import chromadb as db
 import uuid
 
 class Portfolio:
-    "check"
+    "check 6"
     def __init__(self, file_path="app/resources/my_portfolio.csv"):
         self.file_path = file_path
         self.data = pd.read_csv(file_path)
