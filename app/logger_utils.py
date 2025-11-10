@@ -1,4 +1,4 @@
-"""Utility module for logging, validation, and safe execution."""
+"""Utility module for logging, validation, and safe execution.."""
 
 import logging
 from contextlib import contextmanager

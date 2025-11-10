@@ -16,7 +16,7 @@ logger = get_logger("Chain")
 
 
 class Chain:
-    """Encapsulates LLM operations for job extraction and cold email generation."""
+    """Encapsulates LLM operations for job extraction and cold email generation.."""
 
     _JOB_PROMPT = PromptTemplate.from_template("""
 ### SCRAPED TEXT:

@@ -1,4 +1,4 @@
-"""Cold Email Generator Application."""
+"""Cold Email Generator Application.."""
 
 from typing import List, Dict, Optional
 import streamlit as st

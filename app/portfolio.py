@@ -61,7 +61,7 @@ class Portfolio:
                 metadatas=[meta for _, meta, _ in records],
                 ids=[uid for _, _, uid in records],
             )
-            logger.info(f"Loaded {len(records)} portfolio entries.")
+            logger.info(f"Loaded {len(records)} portfolio entries..")
 
     def query_links(self, skills: List[str], n_results: int = 2) -> List[Dict[str, Any]]:
         """Retrieve project links relevant to provided skills."""
