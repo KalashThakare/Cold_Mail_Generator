@@ -2,7 +2,7 @@
 Cold Email Generator Application
 
 This module provides a Streamlit-based UI for generating personalized cold emails
-based on job postings extracted from web URLs.
+based on job postings extracted from web URLs..
 """
 
 import logging
