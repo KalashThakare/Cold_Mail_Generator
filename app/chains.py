@@ -1,7 +1,6 @@
 """Chain module for LLM operations."""
 
 import os
-import logging
 from typing import List, Dict, Any
 
 from dotenv import load_dotenv
@@ -10,21 +9,23 @@ from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import JsonOutputParser
 from langchain_core.exceptions import OutputParserException
 
+from logger_utils import get_logger, safe_execution
+
 load_dotenv()
-logger = logging.getLogger("Chain")
+logger = get_logger("Chain")
 
 
 class Chain:
-    """Encapsulates all LLM-based operations: job extraction and email writing."""
+    """Encapsulates LLM operations for job extraction and cold email generation."""
 
     _JOB_PROMPT = PromptTemplate.from_template("""
-### SCRAPED TEXT FROM WEBSITE:
+### SCRAPED TEXT:
 {page_data}
 
 ### INSTRUCTION:
-Extract job postings from the text above and return only valid JSON with fields:
+Extract job postings from the text and return valid JSON containing:
 `role`, `experience`, `skills`, and `description`.
-Return **only** valid JSON (no explanation).
+Return only the JSON.
 """)
 
     _EMAIL_PROMPT = PromptTemplate.from_template("""
@@ -32,13 +33,13 @@ Return **only** valid JSON (no explanation).
 {job_description}
 
 ### INSTRUCTION:
-You are Kalash, a passionate student developer in AI & software solutions.
-Write a cold email for the above job, showing enthusiasm, relevant projects, and
-including proof links: {link_list}. Avoid preambles — output the email only.
+You are Kalash, a passionate student developer specializing in AI and software.
+Write a concise, personalized cold email for the above job, showing enthusiasm,
+relevant projects, and proof links: {link_list}. Output email only.
 """)
 
     def __init__(self):
-        """Initialize LLM with Groq API key."""
+        """Initialize LLM connection."""
         api_key = os.getenv("GROQ_API_KEY")
         if not api_key:
             raise EnvironmentError("Missing GROQ_API_KEY in environment.")
@@ -52,35 +53,26 @@ including proof links: {link_list}. Avoid preambles — output the email only.
         logger.info("Chain initialized successfully.")
 
     def extract_jobs(self, cleaned_text: str) -> List[Dict[str, Any]]:
-        """Extract structured job data from webpage text."""
+        """Extract structured job listings from text."""
         if not cleaned_text.strip():
             raise ValueError("Cleaned text cannot be empty.")
 
-        try:
+        with safe_execution(logger, "extract_jobs"):
             response = (self._JOB_PROMPT | self.llm).invoke({"page_data": cleaned_text})
             result = self._parser.parse(response.content)
             jobs = result if isinstance(result, list) else [result]
             logger.info(f"Extracted {len(jobs)} job(s).")
             return jobs
-        except OutputParserException as e:
-            logger.error(f"Job parsing failed: {e}")
-            raise OutputParserException("Failed to parse job data from response.") from e
-        except Exception as e:
-            logger.error(f"Job extraction failed: {e}")
-            raise RuntimeError("Unexpected error while extracting jobs.") from e
 
     def write_mail(self, job: Dict[str, Any], links: List[Dict[str, Any]]) -> str:
-        """Generate cold email content for a job posting."""
+        """Generate a cold email for a given job posting."""
         if not job:
-            raise ValueError("Job details are required to generate email.")
+            raise ValueError("Job data is required to generate an email.")
 
-        try:
+        with safe_execution(logger, "write_mail"):
             response = (self._EMAIL_PROMPT | self.llm).invoke({
                 "job_description": str(job),
                 "link_list": links
             })
-            logger.info(f"Email generated for role: {job.get('role', 'Unknown')}")
+            logger.info(f"Generated email for: {job.get('role', 'Unknown')}")
             return response.content.strip()
-        except Exception as e:
-            logger.error(f"Email generation failed: {e}")
-            raise RuntimeError("Failed to generate email.") from e
