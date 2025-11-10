@@ -2,7 +2,7 @@
 Cold Email Generator Application
 
 This module provides a Streamlit-based UI for generating personalized cold emails
-based on job postings extracted from web URLs..
+based on job postings extracted from web URLs.
 """
 
 import logging
@@ -38,6 +38,19 @@ class EmailGenerator:
         self.portfolio = portfolio
         self._portfolio_loaded = False
     
+    def _validate_url(self, url: str) -> None:
+        """Validate URL is not empty."""
+        if not url or not url.strip():
+            raise ValueError("URL cannot be empty")
+    
+    def _load_documents(self, url: str) -> List:
+        """Load documents from URL."""
+        loader = WebBaseLoader([url])
+        documents = loader.load()
+        if not documents:
+            raise ValueError("No content could be loaded from the URL")
+        return documents
+    
     def load_web_content(self, url: str) -> str:
         """
         Fetch and clean webpage text from a given URL.
@@ -52,24 +65,36 @@ class EmailGenerator:
             ValueError: If URL is invalid or empty
             ConnectionError: If unable to fetch the webpage
         """
-        if not url or not url.strip():
-            raise ValueError("URL cannot be empty")
+        self._validate_url(url)
         
         try:
             logger.info(f"Loading content from URL: {url}")
-            loader = WebBaseLoader([url])
-            documents = loader.load()
-            
-            if not documents:
-                raise ValueError("No content could be loaded from the URL")
-            
+            documents = self._load_documents(url)
             content = clean_text(documents[0].page_content)
             logger.info(f"Successfully loaded {len(content)} characters")
             return content
-            
         except Exception as e:
             logger.error(f"Failed to load web content: {str(e)}")
             raise ConnectionError(f"Unable to fetch content from URL: {str(e)}")
+    
+    def _ensure_portfolio_loaded(self) -> None:
+        """Ensure portfolio is loaded before use."""
+        if not self._portfolio_loaded:
+            logger.info("Loading portfolio data")
+            self.portfolio.load_portfolio()
+            self._portfolio_loaded = True
+    
+    def _generate_single_email(self, job: Dict, idx: int) -> str:
+        """Generate a single email for a job."""
+        try:
+            skills = job.get("skills", [])
+            links = self.portfolio.query_links(skills)
+            email = self.llm.write_mail(job, links)
+            logger.info(f"Generated email {idx}")
+            return email
+        except Exception as e:
+            logger.error(f"Failed to generate email for job {idx}: {str(e)}")
+            return f"Error generating email: {str(e)}"
     
     def generate_emails(self, jobs: List[Dict]) -> List[str]:
         """
@@ -87,27 +112,13 @@ class EmailGenerator:
         if not jobs:
             raise ValueError("No jobs found to generate emails")
         
-        # Load portfolio only once
-        if not self._portfolio_loaded:
-            logger.info("Loading portfolio data")
-            self.portfolio.load_portfolio()
-            self._portfolio_loaded = True
-        
-        emails = []
+        self._ensure_portfolio_loaded()
         logger.info(f"Generating emails for {len(jobs)} job(s)")
         
-        for idx, job in enumerate(jobs, 1):
-            try:
-                skills = job.get("skills", [])
-                links = self.portfolio.query_links(skills)
-                email = self.llm.write_mail(job, links)
-                emails.append(email)
-                logger.info(f"Generated email {idx}/{len(jobs)}")
-            except Exception as e:
-                logger.error(f"Failed to generate email for job {idx}: {str(e)}")
-                emails.append(f"Error generating email: {str(e)}")
-        
-        return emails
+        return [
+            self._generate_single_email(job, idx)
+            for idx, job in enumerate(jobs, 1)
+        ]
     
     def process_url(self, url: str) -> List[str]:
         """
@@ -171,10 +182,7 @@ def render_input_section() -> Optional[str]:
             type="primary"
         )
         
-        if submit_button:
-            return url_input.strip() if url_input else None
-    
-    return None
+        return url_input.strip() if (submit_button and url_input) else None
 
 
 def render_emails(emails: List[str]):
@@ -198,6 +206,30 @@ def render_emails(emails: List[str]):
             )
 
 
+def _handle_error(error: Exception) -> None:
+    """Handle and display errors appropriately."""
+    if isinstance(error, ValueError):
+        logger.warning(f"Validation error: {str(error)}")
+        st.error(f"⚠️ Invalid Input: {str(error)}")
+    elif isinstance(error, ConnectionError):
+        logger.error(f"Connection error: {str(error)}")
+        st.error(f"🌐 Connection Error: {str(error)}")
+    else:
+        logger.exception("Unexpected error occurred")
+        st.error(f"❌ Unexpected Error: {str(error)}")
+        st.info("Please try again or contact support if the issue persists.")
+
+
+def process_url_submission(url: str, generator: EmailGenerator) -> None:
+    """Process URL submission and display results."""
+    with st.spinner("🔄 Processing URL and generating emails..."):
+        try:
+            emails = generator.process_url(url)
+            render_emails(emails)
+        except Exception as e:
+            _handle_error(e)
+
+
 def main():
     """Main application entry point."""
     st.set_page_config(
@@ -210,35 +242,13 @@ def main():
     initialize_session_state()
     render_header()
     
-    # Input section
     url = render_input_section()
     
-    # Process URL if submitted
-    if url:
-        if not st.session_state.processing:
-            st.session_state.processing = True
-            
-            with st.spinner("🔄 Processing URL and generating emails..."):
-                try:
-                    emails = st.session_state.generator.process_url(url)
-                    render_emails(emails)
-                    
-                except ValueError as ve:
-                    logger.warning(f"Validation error: {str(ve)}")
-                    st.error(f"⚠️ Invalid Input: {str(ve)}")
-                    
-                except ConnectionError as ce:
-                    logger.error(f"Connection error: {str(ce)}")
-                    st.error(f"🌐 Connection Error: {str(ve)}")
-                    
-                except Exception as e:
-                    logger.exception("Unexpected error occurred")
-                    st.error(f"❌ Unexpected Error: {str(e)}")
-                    st.info("Please try again or contact support if the issue persists.")
-            
-            st.session_state.processing = False
+    if url and not st.session_state.processing:
+        st.session_state.processing = True
+        process_url_submission(url, st.session_state.generator)
+        st.session_state.processing = False
     
-    # Footer
     st.divider()
     st.caption("Built with Streamlit and LangChain | Powered by AI")
 
